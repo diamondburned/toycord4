@@ -13,6 +13,7 @@ import (
 	_ "embed"
 
 	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v2/gateway"
 	"github.com/diamondburned/arikawa/v2/state"
 	"github.com/diamondburned/gotk4/pkg/core/gextras"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
@@ -153,6 +154,7 @@ type messageView struct {
 }
 
 type messageStore struct {
+	channel  discord.ChannelID
 	messages []message
 }
 
@@ -175,6 +177,10 @@ type message struct {
 	Content  *gtk.TextView
 }
 
+func (view *messageView) setChannel(id discord.ChannelID) {
+	view.store.channel = id
+}
+
 func (view *messageView) canShrink(msg *discord.Message) bool {
 	if len(view.store.messages) == 0 {
 		return false
@@ -187,6 +193,7 @@ func (view *messageView) canShrink(msg *discord.Message) bool {
 func (view *messageView) addMessage(msg *discord.Message) {
 	if view.canShrink(msg) {
 		content := gtk.NewTextView()
+		content.SetEditable(false)
 		content.SetWrapMode(gtk.WrapModeWordChar)
 		// content.SetCSSClasses([]string{"message-content"})
 		content.StyleContext().AddClass("message-content")
@@ -228,6 +235,7 @@ func (view *messageView) addMessage(msg *discord.Message) {
 	author.Show()
 
 	content := gtk.NewTextView()
+	content.SetEditable(false)
 	content.SetWrapMode(gtk.WrapModeWordChar)
 	// content.SetCSSClasses([]string{"message-content"})
 	content.StyleContext().AddClass("message-content")
@@ -422,6 +430,14 @@ func bindDiscord(app *app) {
 	}
 
 	app.Main.SetChild(viewBox)
+
+	app.State.AddHandler(func(msg *gateway.MessageCreateEvent) {
+		glib.IdleAdd(func() {
+			if app.Messages != nil && app.Messages.store.channel == msg.ChannelID {
+				app.Messages.addMessage(&msg.Message)
+			}
+		})
+	})
 }
 
 func (app *app) selectGuild(g *guild) {
@@ -471,7 +487,7 @@ func (app *app) selectChannel(ch *channel) {
 		}
 
 		glib.IdleAdd(func() {
-			app.loadMessages(messages)
+			app.loadMessages(ch.ID, messages)
 		})
 
 		if ch.Guild.IsValid() {
@@ -480,12 +496,13 @@ func (app *app) selectChannel(ch *channel) {
 	}()
 }
 
-func (app *app) loadMessages(messages []discord.Message) {
+func (app *app) loadMessages(chID discord.ChannelID, messages []discord.Message) {
 	app.Messages = newMessageView()
 	app.Messages.list.Show()
+	app.Messages.setChannel(chID)
 	app.MessageScroll.SetChild(app.Messages.list)
 
-	for i := range messages {
+	for i := len(messages) - 1; i >= 0; i-- {
 		app.Messages.addMessage(&messages[i])
 	}
 }
