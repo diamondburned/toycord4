@@ -308,6 +308,7 @@ type pixbufLoaderWriter gdkpixbuf.PixbufLoader
 func pixbufLoaderReadFrom(l *gdkpixbuf.PixbufLoader, r io.Reader) error {
 	_, err := io.Copy((*pixbufLoaderWriter)(l), r)
 	if err != nil {
+		l.Close()
 		return err
 	}
 	if err := l.Close(); err != nil {
@@ -356,7 +357,7 @@ func start(gApp *gtk.Application) {
 
 	w := gtk.NewApplicationWindow(gApp)
 	w.SetTitle("toycord4")
-	w.SetDefaultSize(600, 450)
+	w.SetDefaultSize(700, 550)
 	w.SetChild(box)
 	w.Show()
 
@@ -415,18 +416,20 @@ func bindDiscord(app *app) {
 	viewBox.Append(app.MessageScroll)
 	viewBox.Show()
 
-	guilds, err := app.State.Guilds()
-	if err != nil {
-		log.Println("failed to get guilds:", err)
-		return
-	}
-
 	app.Guilds = newGuildView(app.selectGuild)
 	app.Guilds.list.Show()
 	app.GuildScroll.SetChild(app.Guilds.list)
 
-	for i := range guilds {
-		app.Guilds.addGuild(&guilds[i])
+	ready := app.State.Ready()
+
+	for _, guildID := range ready.UserSettings.GuildPositions {
+		guild, err := app.State.Guild(guildID)
+		if err != nil {
+			log.Println("failed to get guild:", err)
+			continue
+		}
+
+		app.Guilds.addGuild(guild)
 	}
 
 	app.Main.SetChild(viewBox)
