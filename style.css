@@ -1,0 +1,26 @@
+.guild-row {
+	padding: 4px;
+	border-right: 1px solid darker(@theme_bg_color);
+}
+
+.channel-row {
+	border-right: 1px solid darker(@theme_bg_color);
+}
+.channel-row label {
+	padding: 2px 4px;
+}
+
+.message-row {
+	padding: 2px 6px;
+}
+
+.message-row label,
+.message-row textview,
+.message-row textview text {
+	padding: 0 6px;
+	background-color: transparent;
+}
+
+.message-compact textview {
+	margin-left: 32px;
+}
