@@ -15,13 +15,12 @@ import (
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/gateway"
 	"github.com/diamondburned/arikawa/v2/state"
-	"github.com/diamondburned/gotk4/pkg/core/gextras"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/gdkpixbuf/v2"
+	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/ningen/v2"
-	"github.com/gotk3/gotk3/glib"
 )
 
 //go:embed style.css
@@ -133,8 +132,8 @@ func (view *channelView) addChannel(ch *discord.Channel) {
 	}
 
 	name := gtk.NewLabel("#" + ch.Name)
-	name.SetXalign(0)
-	name.SetWrapMode(pango.WrapModeWordChar)
+	name.SetXAlign(0)
+	name.SetWrapMode(pango.WrapWordChar)
 	name.Show()
 
 	channel := channel{ch.ID, ch.GuildID, name}
@@ -160,7 +159,7 @@ type messageStore struct {
 
 func newMessageView() *messageView {
 	list := gtk.NewListBox()
-	list.SetSelectionMode(gtk.SelectionModeNone)
+	list.SetSelectionMode(gtk.SelectionNone)
 	list.Show()
 
 	return &messageView{
@@ -194,13 +193,13 @@ func (view *messageView) addMessage(msg *discord.Message) {
 	if view.canShrink(msg) {
 		content := gtk.NewTextView()
 		content.SetEditable(false)
-		content.SetWrapMode(gtk.WrapModeWordChar)
+		content.SetWrapMode(gtk.WrapWordChar)
 		// content.SetCSSClasses([]string{"message-content"})
 		content.StyleContext().AddClass("message-content")
 		content.Show()
 
 		buffer := content.Buffer()
-		buffer.SetText(msg.Content, len(msg.Content))
+		buffer.SetText(msg.Content)
 
 		row := gtk.NewListBoxRow()
 		row.StyleContext().AddClass("message-row")
@@ -228,21 +227,21 @@ func (view *messageView) addMessage(msg *discord.Message) {
 
 	author := gtk.NewLabel("<b>" + html.EscapeString(msg.Author.Username) + "</b>")
 	author.SetUseMarkup(true)
-	author.SetXalign(0)
-	author.SetWrapMode(pango.WrapModeWordChar)
+	author.SetXAlign(0)
+	author.SetWrapMode(pango.WrapWordChar)
 	// author.SetCSSClasses([]string{"username"})
 	author.StyleContext().AddClass("username")
 	author.Show()
 
 	content := gtk.NewTextView()
 	content.SetEditable(false)
-	content.SetWrapMode(gtk.WrapModeWordChar)
+	content.SetWrapMode(gtk.WrapWordChar)
 	// content.SetCSSClasses([]string{"message-content"})
 	content.StyleContext().AddClass("message-content")
 	content.Show()
 
 	buffer := content.Buffer()
-	buffer.SetText(msg.Content, len(msg.Content))
+	buffer.SetText(msg.Content)
 
 	message := message{msg.ID, msg.Author.ID, avatar, author, content}
 	view.store.messages = append(view.store.messages, message)
@@ -362,9 +361,9 @@ func start(gApp *gtk.Application) {
 	w.Show()
 
 	css := gtk.NewCSSProvider()
-	css.LoadFromData([]byte(styleCSS))
+	css.LoadFromData(styleCSS)
 
-	display := gextras.MustGet(&w.InitiallyUnowned, "display").(*gdk.Display)
+	display := w.ObjectProperty("display").(*gdk.Display)
 	gtk.StyleContextAddProviderForDisplay(display, css, 600)
 
 	go func() {
@@ -397,17 +396,17 @@ func start(gApp *gtk.Application) {
 
 func bindDiscord(app *app) {
 	app.GuildScroll = gtk.NewScrolledWindow()
-	app.GuildScroll.SetPolicy(gtk.PolicyTypeNever, gtk.PolicyTypeAutomatic)
+	app.GuildScroll.SetPolicy(gtk.PolicyNever, gtk.PolicyAutomatic)
 	app.GuildScroll.Show()
 
 	app.ChannelScroll = gtk.NewScrolledWindow()
 	app.ChannelScroll.SetSizeRequest(200, -1)
-	app.ChannelScroll.SetPolicy(gtk.PolicyTypeNever, gtk.PolicyTypeAutomatic)
+	app.ChannelScroll.SetPolicy(gtk.PolicyNever, gtk.PolicyAutomatic)
 	app.ChannelScroll.Show()
 
 	app.MessageScroll = gtk.NewScrolledWindow()
 	app.MessageScroll.SetHExpand(true)
-	app.MessageScroll.SetPolicy(gtk.PolicyTypeNever, gtk.PolicyTypeAutomatic)
+	app.MessageScroll.SetPolicy(gtk.PolicyNever, gtk.PolicyAutomatic)
 	app.MessageScroll.Show()
 
 	viewBox := gtk.NewBox(gtk.OrientationHorizontal, 0)
